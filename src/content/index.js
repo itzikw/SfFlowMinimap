@@ -8,10 +8,11 @@
 import { CFG } from './config.js';
 import { buildMinimap } from './builder.js';
 import { isFlowBuilderPage, startDomObserver, watchNavigation } from './observers.js';
-import { loadSettings } from './settings.js';
+import { loadSettings, watchSettingsChanges } from './settings.js';
 
 async function init() {
   await loadSettings();
+  watchSettingsChanges();
   if (isFlowBuilderPage()) {
     buildMinimap();
   }
