@@ -18,7 +18,7 @@
  *   tooltip           — the tooltip div element | null
  *   canvasScrollEl    — the scrollable canvas container | null
  *   isMinimapDragging — true while the user is panning via the minimap
- *   settings          — { position, startCollapsed, contextFillPct } loaded from chrome.storage.sync
+ *   settings          — { position, startCollapsed, contextFillPct } loaded from chrome.storage.local
  */
 export const state = {
   minimap: null,
