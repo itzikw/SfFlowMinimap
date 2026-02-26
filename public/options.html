@@ -455,7 +455,7 @@
       });
 
       async function loadAndRender() {
-        const saved = await chrome.storage.sync.get(DEFAULTS);
+        const saved = await chrome.storage.local.get(DEFAULTS);
 
         const posRadio = document.querySelector(`input[name="position"][value="${saved.position}"]`);
         if (posRadio) posRadio.checked = true;
@@ -483,7 +483,7 @@
           contextFillPct: Number(fillSlider.value),
         };
 
-        await chrome.storage.sync.set(settings);
+        await chrome.storage.local.set(settings);
 
         const feedback = document.getElementById('save-feedback');
         feedback.classList.add('visible');

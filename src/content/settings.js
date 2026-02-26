@@ -1,5 +1,5 @@
 /**
- * Settings helpers: load persisted settings from chrome.storage.sync,
+ * Settings helpers: load persisted settings from chrome.storage.local,
  * apply them to the minimap widget, and watch for live changes.
  */
 import { state } from './state.js';
@@ -8,12 +8,12 @@ import { scheduleRender } from './renderer.js';
 const DEFAULTS = { position: 'bottom-right', startCollapsed: false, contextFillPct: 60 };
 
 /**
- * Loads settings from chrome.storage.sync into state.settings.
+ * Loads settings from chrome.storage.local into state.settings.
  * Falls back to DEFAULTS if storage is unavailable.
  */
 export async function loadSettings() {
   try {
-    const saved = await chrome.storage.sync.get(DEFAULTS);
+    const saved = await chrome.storage.local.get(DEFAULTS);
     state.settings = { ...DEFAULTS, ...saved };
   } catch {
     state.settings = { ...DEFAULTS };
