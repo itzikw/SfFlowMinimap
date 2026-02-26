@@ -395,13 +395,13 @@
       <div class="card">
         <div class="card-title">Minimap Focus Area</div>
         <div class="slider-row">
-          <label for="fill-pct">Visible flow fill</label>
-          <input type="range" id="fill-pct" min="20" max="90" step="5" value="60" />
+          <label for="fill-pct">Zoom level</label>
+          <input type="range" id="fill-pct" min="0" max="100" step="5" value="60" />
           <span class="slider-value" id="fill-pct-display">60%</span>
         </div>
         <div class="slider-hint">
-          How much of the minimap the currently visible flow area should occupy. Higher = more
-          zoomed in.
+          How much of the minimap the currently visible flow area fills. 0% = fully zoomed out
+          (all nodes visible), 100% = maximum zoom in on visible nodes.
         </div>
       </div>
 

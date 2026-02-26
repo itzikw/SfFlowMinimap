@@ -27,7 +27,8 @@ export async function loadSettings() {
  * @param {string} position
  */
 export function applyPosition(container, position) {
-  ['top', 'right', 'bottom', 'left'].forEach((s) => (container.style[s] = 'auto'));
+  // Empty string removes the property from inline style entirely — no CSS rule can win.
+  ['top', 'right', 'bottom', 'left'].forEach((s) => (container.style[s] = ''));
   const [v, h] = (position || 'bottom-right').split('-');
   container.style[v] = '24px';
   container.style[h] = '24px';

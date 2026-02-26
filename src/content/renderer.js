@@ -110,7 +110,9 @@ export function renderMinimap() {
     const srcMaxY = Math.max(...src.map((r) => r.bottom));
     const srcW = Math.max(srcMaxX - srcMinX, 100);
     const srcH = Math.max(srcMaxY - srcMinY, 100);
-    const fillPct = state.settings?.contextFillPct ?? 60;
+    // fillPct 0–100: clamp to 1–100 to avoid division-by-zero; at 0% the
+    // Math.max(scaleFitAll, scaleCtx) floor ensures we never go below fit-all.
+    const fillPct = Math.max(1, state.settings?.contextFillPct ?? 60);
     const effectiveZoom = (100 / fillPct) / state.minimapZoom;
     const scaleCtx = Math.min(
       (W - PAD * 2) / (srcW * effectiveZoom),

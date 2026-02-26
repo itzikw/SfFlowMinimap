@@ -4,8 +4,7 @@
 
 #sf-minimap-root {
   position: fixed;
-  bottom: 24px;
-  right: 24px;
+  /* bottom/right/top/left are set entirely by applyPosition() in JS */
   z-index: 999999;
   background: #1e293b;
   border: 1px solid #334155;
