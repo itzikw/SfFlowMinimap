@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Salesforce Flow Minimap — Settings</title>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        background: #0f172a;
+        color: #e2e8f0;
+        font-family: system-ui, -apple-system, sans-serif;
+        font-size: 14px;
+        min-height: 100vh;
+        padding: 40px 24px;
+      }
+
+      .page {
+        max-width: 540px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+
+      /* ── Header ──────────────────────────────────────────────── */
+      .page-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #1e293b;
+      }
+
+      .page-header h1 {
+        font-size: 20px;
+        font-weight: 600;
+        color: #f1f5f9;
+      }
+
+      .page-header .version {
+        font-size: 11px;
+        color: #64748b;
+        margin-top: 2px;
+      }
+
+      /* ── Cards ───────────────────────────────────────────────── */
+      .card {
+        background: #1e293b;
+        border-radius: 10px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .card-title {
+        font-size: 13px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #94a3b8;
+      }
+
+      /* ── Position picker ─────────────────────────────────────── */
+      .position-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      .position-option {
+        position: relative;
+      }
+
+      .position-option input[type='radio'] {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      .position-option label {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        padding: 12px;
+        border: 2px solid #334155;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: border-color 0.15s, background 0.15s;
+        user-select: none;
+      }
+
+      .position-option input:checked + label {
+        border-color: #1d4ed8;
+        background: rgba(29, 78, 216, 0.12);
+      }
+
+      .position-option label:hover {
+        border-color: #475569;
+      }
+
+      /* Tiny screen mockup */
+      .screen-mock {
+        width: 52px;
+        height: 36px;
+        border: 1.5px solid #475569;
+        border-radius: 4px;
+        position: relative;
+        background: #0f172a;
+      }
+
+      .screen-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 2px;
+        background: #1d4ed8;
+        position: absolute;
+      }
+
+      .top-left .screen-dot {
+        top: 4px;
+        left: 4px;
+      }
+      .top-right .screen-dot {
+        top: 4px;
+        right: 4px;
+      }
+      .bottom-left .screen-dot {
+        bottom: 4px;
+        left: 4px;
+      }
+      .bottom-right .screen-dot {
+        bottom: 4px;
+        right: 4px;
+      }
+
+      .position-option label span.pos-label {
+        font-size: 12px;
+        color: #cbd5e1;
+      }
+
+      /* ── Start-mode radio cards ──────────────────────────────── */
+      .mode-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      .mode-option {
+        position: relative;
+      }
+
+      .mode-option input[type='radio'] {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      .mode-option label {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        padding: 14px 12px;
+        border: 2px solid #334155;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: border-color 0.15s, background 0.15s;
+        user-select: none;
+      }
+
+      .mode-option input:checked + label {
+        border-color: #1d4ed8;
+        background: rgba(29, 78, 216, 0.12);
+      }
+
+      .mode-option label:hover {
+        border-color: #475569;
+      }
+
+      .mode-icon {
+        font-size: 22px;
+        line-height: 1;
+      }
+
+      .mode-option label span.mode-label {
+        font-size: 13px;
+        font-weight: 500;
+        color: #e2e8f0;
+      }
+
+      .mode-option label span.mode-desc {
+        font-size: 11px;
+        color: #64748b;
+        text-align: center;
+      }
+
+      /* ── Context fill slider ─────────────────────────────────── */
+      .slider-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .slider-row label {
+        font-size: 13px;
+        color: #cbd5e1;
+        flex: 1;
+      }
+
+      .slider-row input[type='range'] {
+        flex: 2;
+        accent-color: #1d4ed8;
+        cursor: pointer;
+      }
+
+      .slider-value {
+        font-size: 13px;
+        font-weight: 600;
+        color: #e2e8f0;
+        min-width: 36px;
+        text-align: right;
+      }
+
+      .slider-hint {
+        font-size: 11px;
+        color: #64748b;
+        margin-top: 2px;
+      }
+
+      /* ── Save button ─────────────────────────────────────────── */
+      .save-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .btn-save {
+        background: #1d4ed8;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        padding: 9px 22px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+
+      .btn-save:hover {
+        background: #2563eb;
+      }
+
+      .btn-save:active {
+        background: #1e40af;
+      }
+
+      .save-feedback {
+        font-size: 13px;
+        color: #22c55e;
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+
+      .save-feedback.visible {
+        opacity: 1;
+      }
+
+      /* ── About section ───────────────────────────────────────── */
+      .about-body {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .about-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 13px;
+        color: #94a3b8;
+      }
+
+      .about-row strong {
+        color: #e2e8f0;
+      }
+
+      .btn-linkedin {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        background: #0077b5;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        padding: 8px 16px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        text-decoration: none;
+        transition: background 0.15s;
+      }
+
+      .btn-linkedin:hover {
+        background: #006097;
+      }
+
+      .linkedin-icon {
+        width: 16px;
+        height: 16px;
+        fill: currentColor;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <!-- Header -->
+      <div class="page-header">
+        <div>
+          <h1>Salesforce Flow Minimap</h1>
+          <div class="version">Settings</div>
+        </div>
+      </div>
+
+      <!-- Default Position -->
+      <div class="card">
+        <div class="card-title">Default Position</div>
+        <div class="position-grid">
+          <div class="position-option">
+            <input type="radio" name="position" id="pos-tl" value="top-left" />
+            <label for="pos-tl">
+              <div class="screen-mock top-left"><div class="screen-dot"></div></div>
+              <span class="pos-label">Top Left</span>
+            </label>
+          </div>
+          <div class="position-option">
+            <input type="radio" name="position" id="pos-tr" value="top-right" />
+            <label for="pos-tr">
+              <div class="screen-mock top-right"><div class="screen-dot"></div></div>
+              <span class="pos-label">Top Right</span>
+            </label>
+          </div>
+          <div class="position-option">
+            <input type="radio" name="position" id="pos-bl" value="bottom-left" />
+            <label for="pos-bl">
+              <div class="screen-mock bottom-left"><div class="screen-dot"></div></div>
+              <span class="pos-label">Bottom Left</span>
+            </label>
+          </div>
+          <div class="position-option">
+            <input type="radio" name="position" id="pos-br" value="bottom-right" />
+            <label for="pos-br">
+              <div class="screen-mock bottom-right"><div class="screen-dot"></div></div>
+              <span class="pos-label">Bottom Right</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Start Mode -->
+      <div class="card">
+        <div class="card-title">Start Mode</div>
+        <div class="mode-grid">
+          <div class="mode-option">
+            <input type="radio" name="startCollapsed" id="mode-expanded" value="false" />
+            <label for="mode-expanded">
+              <span class="mode-icon">&#9645;</span>
+              <span class="mode-label">Expanded</span>
+              <span class="mode-desc">Minimap opens fully visible</span>
+            </label>
+          </div>
+          <div class="mode-option">
+            <input type="radio" name="startCollapsed" id="mode-collapsed" value="true" />
+            <label for="mode-collapsed">
+              <span class="mode-icon">&#8212;</span>
+              <span class="mode-label">Minimized</span>
+              <span class="mode-desc">Minimap starts collapsed</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Context Fill -->
+      <div class="card">
+        <div class="card-title">Minimap Focus Area</div>
+        <div class="slider-row">
+          <label for="fill-pct">Visible flow fill</label>
+          <input type="range" id="fill-pct" min="20" max="90" step="5" value="60" />
+          <span class="slider-value" id="fill-pct-display">60%</span>
+        </div>
+        <div class="slider-hint">
+          How much of the minimap the currently visible flow area should occupy. Higher = more
+          zoomed in.
+        </div>
+      </div>
+
+      <!-- Save -->
+      <div class="card">
+        <div class="save-row">
+          <button class="btn-save" id="btn-save">Save Settings</button>
+          <span class="save-feedback" id="save-feedback">&#10003; Saved</span>
+        </div>
+      </div>
+
+      <!-- About -->
+      <div class="card">
+        <div class="card-title">About</div>
+        <div class="about-body">
+          <div class="about-row">
+            <span>Extension</span>
+            <strong>Salesforce Flow Minimap</strong>
+          </div>
+          <div class="about-row">
+            <span>Version</span>
+            <strong id="ext-version">1.0.0</strong>
+          </div>
+          <div class="about-row">
+            <span>Developer</span>
+            <a
+              class="btn-linkedin"
+              href="https://www.linkedin.com/in/itzik-winograd-766235153/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <svg class="linkedin-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path
+                  d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"
+                />
+              </svg>
+              Itzik Winograd
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const DEFAULTS = { position: 'bottom-right', startCollapsed: false, contextFillPct: 60 };
+
+      const fillSlider = document.getElementById('fill-pct');
+      const fillDisplay = document.getElementById('fill-pct-display');
+      fillSlider.addEventListener('input', () => {
+        fillDisplay.textContent = `${fillSlider.value}%`;
+      });
+
+      async function loadAndRender() {
+        const saved = await chrome.storage.sync.get(DEFAULTS);
+
+        const posRadio = document.querySelector(`input[name="position"][value="${saved.position}"]`);
+        if (posRadio) posRadio.checked = true;
+
+        const modeRadio = document.querySelector(
+          `input[name="startCollapsed"][value="${String(saved.startCollapsed)}"]`,
+        );
+        if (modeRadio) modeRadio.checked = true;
+
+        fillSlider.value = saved.contextFillPct;
+        fillDisplay.textContent = `${saved.contextFillPct}%`;
+
+        // Show current version from manifest
+        const manifest = chrome.runtime.getManifest();
+        document.getElementById('ext-version').textContent = manifest.version;
+      }
+
+      document.getElementById('btn-save').addEventListener('click', async () => {
+        const posEl = document.querySelector('input[name="position"]:checked');
+        const modeEl = document.querySelector('input[name="startCollapsed"]:checked');
+
+        const settings = {
+          position: posEl ? posEl.value : DEFAULTS.position,
+          startCollapsed: modeEl ? modeEl.value === 'true' : DEFAULTS.startCollapsed,
+          contextFillPct: Number(fillSlider.value),
+        };
+
+        await chrome.storage.sync.set(settings);
+
+        const feedback = document.getElementById('save-feedback');
+        feedback.classList.add('visible');
+        setTimeout(() => feedback.classList.remove('visible'), 2000);
+      });
+
+      loadAndRender();
+    </script>
+  </body>
+</html>

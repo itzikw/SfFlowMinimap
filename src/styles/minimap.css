@@ -1,4 +1,4 @@
-/* Salesforce Flow Minimap — minimap-styles.css
+/* Salesforce Flow Minimap — minimap.css
    All selectors are scoped to #sf-minimap-root.
    Extension CSS is exempt from Salesforce CSP. */
 
@@ -11,7 +11,10 @@
   border: 1px solid #334155;
   border-radius: 8px;
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
   font-size: 11px;
   color: #e2e8f0;
   user-select: none;
@@ -21,8 +24,14 @@
 }
 
 @keyframes sf-mm-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0);   }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ── Header ──────────────────────────────────────────────────────────────── */
@@ -53,7 +62,8 @@
 
 #sf-minimap-badge {
   font-size: 9px;
-  color: #64748b;
+  font-weight: 600;
+  color: #cbd5e1;
   padding: 1px 5px;
   background: #1e293b;
   border-radius: 10px;
@@ -70,8 +80,10 @@
   cursor: pointer;
   font-size: 10px;
   font-family: inherit;
-  color: #64748b;
-  transition: background 0.12s, color 0.12s;
+  color: #94a3b8;
+  transition:
+    background 0.12s,
+    color 0.12s;
 }
 
 #sf-minimap-header button:hover {
@@ -79,18 +91,22 @@
   color: #e2e8f0;
 }
 
-/* Names + Fit toggle buttons */
-#sf-minimap-names,
+/* Fit toggle button */
 #sf-minimap-fit {
   padding: 0 6px;
   border: 1px solid #334155 !important;
 }
 
-#sf-minimap-names.sf-btn-active,
 #sf-minimap-fit.sf-btn-active {
   background: #1d4ed8 !important;
   border-color: #1d4ed8 !important;
   color: #fff !important;
+}
+
+/* Settings button */
+#sf-minimap-settings {
+  font-size: 12px;
+  width: 18px;
 }
 
 /* Collapse button */
@@ -104,7 +120,7 @@
 
 #sf-minimap-body {
   padding: 10px 10px 4px;
-  position: relative;    /* needed for resize handle positioning */
+  position: relative; /* needed for resize handle positioning */
 }
 
 /* Canvas — size is set in JS; no fixed CSS dimensions */
@@ -153,11 +169,16 @@
   /* Diagonal-line grip indicator */
   background: linear-gradient(
     135deg,
-    transparent 0%,  transparent 40%,
-    #475569       40%, #475569       50%,
-    transparent   50%, transparent   65%,
-    #475569       65%, #475569       75%,
-    transparent   75%, transparent   100%
+    transparent 0%,
+    transparent 40%,
+    #475569 40%,
+    #475569 50%,
+    transparent 50%,
+    transparent 65%,
+    #475569 65%,
+    #475569 75%,
+    transparent 75%,
+    transparent 100%
   );
   border-radius: 0 0 6px 0;
   opacity: 0.6;
@@ -179,12 +200,15 @@
   padding: 6px 10px;
   background: #1e293b;
   color: #f1f5f9;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
   font-size: 12px;
   font-weight: 500;
   border: 1px solid #475569;
   border-radius: 6px;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
   pointer-events: none;
   white-space: nowrap;
   max-width: 340px;
@@ -192,7 +216,7 @@
   text-overflow: ellipsis;
 }
 
-#sf-minimap-tooltip[style*="display: block"] {
+#sf-minimap-tooltip[style*='display: block'] {
   display: flex !important;
 }
 
