@@ -1,0 +1,209 @@
+/* Salesforce Flow Minimap — minimap-styles.css
+   All selectors are scoped to #sf-minimap-root.
+   Extension CSS is exempt from Salesforce CSP. */
+
+#sf-minimap-root {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 999999;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 11px;
+  color: #e2e8f0;
+  user-select: none;
+  overflow: hidden;
+  /* min-width controlled by canvas size; no fixed width set here */
+  animation: sf-mm-in 0.2s ease;
+}
+
+@keyframes sf-mm-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+
+#sf-minimap-header {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 8px;
+  background: #0f172a;
+  cursor: grab;
+  border-bottom: 1px solid #334155;
+  white-space: nowrap;
+}
+
+#sf-minimap-header:active {
+  cursor: grabbing;
+}
+
+#sf-minimap-title {
+  flex: 1;
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+#sf-minimap-badge {
+  font-size: 9px;
+  color: #64748b;
+  padding: 1px 5px;
+  background: #1e293b;
+  border-radius: 10px;
+}
+
+/* Shared button base — resets Salesforce overrides */
+#sf-minimap-header button {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 18px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 10px;
+  font-family: inherit;
+  color: #64748b;
+  transition: background 0.12s, color 0.12s;
+}
+
+#sf-minimap-header button:hover {
+  background: #334155;
+  color: #e2e8f0;
+}
+
+/* Names + Fit toggle buttons */
+#sf-minimap-names,
+#sf-minimap-fit {
+  padding: 0 6px;
+  border: 1px solid #334155 !important;
+}
+
+#sf-minimap-names.sf-btn-active,
+#sf-minimap-fit.sf-btn-active {
+  background: #1d4ed8 !important;
+  border-color: #1d4ed8 !important;
+  color: #fff !important;
+}
+
+/* Collapse button */
+#sf-minimap-collapse {
+  width: 18px;
+  font-size: 14px;
+  line-height: 1;
+}
+
+/* ── Body ────────────────────────────────────────────────────────────────── */
+
+#sf-minimap-body {
+  padding: 10px 10px 4px;
+  position: relative;    /* needed for resize handle positioning */
+}
+
+/* Canvas — size is set in JS; no fixed CSS dimensions */
+#sf-minimap-canvas {
+  display: block;
+  border-radius: 4px;
+  border: 1px solid #334155;
+  background: #0f172a;
+}
+
+/* ── Legend ──────────────────────────────────────────────────────────────── */
+
+#sf-minimap-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 14px;
+  margin-top: 8px;
+  padding: 7px 0 6px;
+  border-top: 1px solid #273449;
+  font-size: 12px;
+  color: #94a3b8;
+  line-height: 1.7;
+}
+
+.sf-legend-dot {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  vertical-align: middle;
+  margin-right: 4px;
+  flex-shrink: 0;
+  position: relative;
+  top: -1px;
+}
+
+/* ── Resize handle ───────────────────────────────────────────────────────── */
+
+#sf-minimap-resize {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 16px;
+  height: 16px;
+  cursor: nwse-resize;
+  /* Diagonal-line grip indicator */
+  background: linear-gradient(
+    135deg,
+    transparent 0%,  transparent 40%,
+    #475569       40%, #475569       50%,
+    transparent   50%, transparent   65%,
+    #475569       65%, #475569       75%,
+    transparent   75%, transparent   100%
+  );
+  border-radius: 0 0 6px 0;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+
+#sf-minimap-resize:hover {
+  opacity: 1;
+}
+
+/* ── Tooltip ─────────────────────────────────────────────────────────────── */
+
+#sf-minimap-tooltip {
+  position: fixed;
+  z-index: 9999999;
+  display: none;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 10px;
+  background: #1e293b;
+  color: #f1f5f9;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid #475569;
+  border-radius: 6px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+  pointer-events: none;
+  white-space: nowrap;
+  max-width: 340px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#sf-minimap-tooltip[style*="display: block"] {
+  display: flex !important;
+}
+
+#sf-minimap-tooltip-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}

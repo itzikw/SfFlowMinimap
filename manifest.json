@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Salesforce Flow Minimap",
+  "version": "1.0.0",
+  "description": "Adds a draggable minimap overlay to the Salesforce Flow Builder canvas.",
+  "host_permissions": [
+    "https://*.lightning.force.com/*",
+    "https://*.salesforce.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.lightning.force.com/*",
+        "https://*.salesforce.com/*"
+      ],
+      "js": ["content-script.js"],
+      "css": ["minimap-styles.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}
