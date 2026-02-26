@@ -36,6 +36,7 @@ export default defineConfig({
         // copy it as-is rather than letting Vite inline it into the IIFE bundle.
         { src: 'src/styles/minimap.css', dest: '.', rename: 'minimap-styles.css' },
         { src: 'public/options.html', dest: '.' },
+        { src: 'public/options.js', dest: '.' },
       ],
     }),
   ],
