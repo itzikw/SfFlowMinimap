@@ -4,8 +4,9 @@
  * Mousedown: drag threshold decides between panning the minimap view
  *            (adjusting minimapPanOffset) and clicking to navigate to a node.
  * Dblclick:  resets zoom and pan offset to defaults.
- * Mousemove: shows a tooltip for the hovered flow element.
- * Mouseleave: hides the tooltip.
+ * Mousemove: shows a tooltip for the hovered flow element; highlights its
+ *            connectors by updating state.hoveredNodeEl.
+ * Mouseleave: hides the tooltip and clears the hover highlight.
  * Wheel:     zooms the minimap view in/out.
  */
 import { state } from './state.js';
@@ -100,6 +101,8 @@ export function handleMinimapWheel(e) {
  * Handles mousemove on the minimap canvas.
  *
  * Shows a tooltip for whichever flow element the cursor is over.
+ * Updates state.hoveredNodeEl and triggers a re-render only when the
+ * hovered element changes (to highlight/de-highlight its connectors).
  * No-ops while a pan drag is in progress.
  *
  * @param {MouseEvent} e
@@ -113,18 +116,45 @@ export function handleMinimapHover(e) {
   const sc = minimapToScreen(e.clientX - cvr.left, e.clientY - cvr.top);
   if (!sc) {
     hideTooltip();
+    if (state.hoveredNodeEl !== null) {
+      state.hoveredNodeEl = null;
+      renderMinimap();
+    }
     return;
   }
 
+  let foundNode = null;
   for (const node of collectNodes()) {
     const r = node.getBoundingClientRect();
     if (sc.x >= r.left && sc.x <= r.right && sc.y >= r.top && sc.y <= r.bottom) {
-      showTooltip(e.clientX, e.clientY, getFullLabel(node), classifyElement(node));
-      state.minimap.canvas.style.cursor = 'pointer';
-      return;
+      foundNode = node;
+      break;
     }
   }
 
+  if (foundNode) {
+    showTooltip(e.clientX, e.clientY, getFullLabel(foundNode), classifyElement(foundNode));
+    state.minimap.canvas.style.cursor = 'pointer';
+  } else {
+    hideTooltip();
+    state.minimap.canvas.style.cursor = 'default';
+  }
+
+  // Only re-render when the hovered element changes (avoids re-draw on every pixel move).
+  if (foundNode !== state.hoveredNodeEl) {
+    state.hoveredNodeEl = foundNode;
+    renderMinimap();
+  }
+}
+
+/**
+ * Handles the mouse leaving the minimap canvas.
+ * Hides the tooltip and clears the hover highlight.
+ */
+export function handleMinimapLeave() {
   hideTooltip();
-  state.minimap.canvas.style.cursor = 'default';
+  if (state.hoveredNodeEl !== null) {
+    state.hoveredNodeEl = null;
+    renderMinimap();
+  }
 }

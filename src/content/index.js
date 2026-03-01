@@ -9,10 +9,12 @@ import { CFG } from './config.js';
 import { buildMinimap } from './builder.js';
 import { isFlowBuilderPage, startDomObserver, watchNavigation } from './observers.js';
 import { loadSettings, watchSettingsChanges } from './settings.js';
+import { initShortcuts } from './shortcuts.js';
 
 async function init() {
   await loadSettings();
   watchSettingsChanges();
+  initShortcuts(); // registered once; keydown handler no-ops when minimap is absent
   if (isFlowBuilderPage()) {
     buildMinimap();
   }

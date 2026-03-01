@@ -5,7 +5,7 @@
 import { CFG } from './config.js';
 import { state } from './state.js';
 import { collectNodes, collectConnectors } from './collector.js';
-import { classifyElement } from './classifier.js';
+import { classifyElement, getFullLabel } from './classifier.js';
 
 /**
  * Draws a rounded-rectangle path on `ctx`. Does not stroke or fill —
@@ -33,17 +33,52 @@ export function drawRR(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-/** Updates the node-count badge in the minimap header. */
-export function updateBadge(n) {
-  if (state.minimap && state.minimap.badge) {
-    state.minimap.badge.textContent = n > 0 ? `${n} nodes` : '';
+/**
+ * Updates the node-count badge in the minimap header.
+ * When `matched` is provided it renders "matched / total".
+ *
+ * @param {number} total
+ * @param {number} [matched]
+ */
+export function updateBadge(total, matched) {
+  if (!state.minimap?.badge) {
+    return;
+  }
+  if (total === 0) {
+    state.minimap.badge.textContent = '';
+  } else if (matched !== undefined) {
+    state.minimap.badge.textContent = `${matched} / ${total}`;
+  } else {
+    state.minimap.badge.textContent = `${total} nodes`;
   }
 }
 
 /**
- * Full minimap repaint: clears the canvas, computes the scale/origin from
- * visible nodes, draws connectors, nodes (with optional labels), and the
- * viewport rectangle.
+ * Returns true if either endpoint of connector `c` falls within the
+ * bounding rect of `nodeRect` expanded by a 20 px snap margin.
+ *
+ * @param {{ x1:number, y1:number, x2:number, y2:number }} c
+ * @param {DOMRect} nodeRect
+ * @returns {boolean}
+ */
+function connectorTouchesNode(c, nodeRect) {
+  const s = 20;
+  const l = nodeRect.left - s;
+  const r = nodeRect.right + s;
+  const t = nodeRect.top - s;
+  const b = nodeRect.bottom + s;
+  return (
+    (c.x1 >= l && c.x1 <= r && c.y1 >= t && c.y1 <= b) ||
+    (c.x2 >= l && c.x2 <= r && c.y2 >= t && c.y2 <= b)
+  );
+}
+
+/**
+ * Full minimap repaint. Three drawing passes:
+ *  1. Non-highlighted connectors (grey; fault paths in orange + dashed)
+ *  2. Nodes (dimmed when a search query is active and node doesn't match)
+ *  3. Connectors connected to the hovered node, drawn on top in blue
+ * Followed by the viewport rectangle indicator.
  */
 export function renderMinimap() {
   if (!state.minimap) {
@@ -110,10 +145,8 @@ export function renderMinimap() {
     const srcMaxY = Math.max(...src.map((r) => r.bottom));
     const srcW = Math.max(srcMaxX - srcMinX, 100);
     const srcH = Math.max(srcMaxY - srcMinY, 100);
-    // fillPct 0–100: clamp to 1–100 to avoid division-by-zero; at 0% the
-    // Math.max(scaleFitAll, scaleCtx) floor ensures we never go below fit-all.
     const fillPct = Math.max(1, state.settings?.contextFillPct ?? 60);
-    const effectiveZoom = (100 / fillPct) / state.minimapZoom;
+    const effectiveZoom = 100 / fillPct / state.minimapZoom;
     const scaleCtx = Math.min(
       (W - PAD * 2) / (srcW * effectiveZoom),
       (H - PAD * 2) / (srcH * effectiveZoom),
@@ -133,19 +166,37 @@ export function renderMinimap() {
   const toMY = (y) => (y - oy) * scale + PAD;
   state.renderParams = { scale, ox, oy };
 
-  // Connectors
+  // Pre-collect connectors; reused by all three passes.
+  const connectors = collectConnectors(nb);
+  const hoveredRect = state.hoveredNodeEl ? state.hoveredNodeEl.getBoundingClientRect() : null;
+
+  // ── Pass 1: Non-highlighted connectors ──────────────────────────────────
   ctx.save();
-  ctx.strokeStyle = 'rgba(148,163,184,0.6)';
   ctx.lineWidth = 1;
-  for (const c of collectConnectors(nb)) {
+  for (const c of connectors) {
+    // Connectors touching the hovered node are deferred to pass 3.
+    if (hoveredRect && connectorTouchesNode(c, hoveredRect)) {
+      continue;
+    }
+    if (c.isFault) {
+      ctx.strokeStyle = 'rgba(249,115,22,0.75)';
+      ctx.setLineDash([3, 3]);
+    } else {
+      ctx.strokeStyle = 'rgba(148,163,184,0.55)';
+      ctx.setLineDash([]);
+    }
     ctx.beginPath();
     ctx.moveTo(toMX(c.x1), toMY(c.y1));
     ctx.lineTo(toMX(c.x2), toMY(c.y2));
     ctx.stroke();
   }
+  ctx.setLineDash([]);
   ctx.restore();
 
-  // Nodes
+  // ── Pass 2: Nodes (with optional search dimming) ─────────────────────────
+  const hasSearch = state.searchQuery.length > 0;
+  let matchCount = 0;
+
   for (const r of rects) {
     const x = toMX(r.left);
     const y = toMY(r.top);
@@ -155,12 +206,39 @@ export function renderMinimap() {
       continue;
     }
 
+    if (hasSearch) {
+      const label = getFullLabel(r.el).toLowerCase();
+      const isMatch = label.includes(state.searchQuery);
+      if (isMatch) {
+        matchCount++;
+      }
+      ctx.globalAlpha = isMatch ? 1 : 0.15;
+    }
+
     ctx.fillStyle = CFG.COLOURS[classifyElement(r.el)] || CFG.COLOURS.default;
     drawRR(ctx, x, y, w, h, 2);
     ctx.fill();
+    ctx.globalAlpha = 1;
   }
 
-  // Viewport indicator
+  // ── Pass 3: Highlighted connectors drawn on top of nodes ─────────────────
+  if (hoveredRect) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(96,165,250,0.9)';
+    ctx.lineWidth = 2;
+    for (const c of connectors) {
+      if (!connectorTouchesNode(c, hoveredRect)) {
+        continue;
+      }
+      ctx.beginPath();
+      ctx.moveTo(toMX(c.x1), toMY(c.y1));
+      ctx.lineTo(toMX(c.x2), toMY(c.y2));
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // ── Viewport indicator ───────────────────────────────────────────────────
   const vpX = toMX(0);
   const vpY = toMY(0);
   const vpW = window.innerWidth * scale;
@@ -173,7 +251,7 @@ export function renderMinimap() {
   ctx.strokeRect(vpX, vpY, vpW, vpH);
   ctx.setLineDash([]);
 
-  updateBadge(rects.length);
+  updateBadge(rects.length, hasSearch ? matchCount : undefined);
 }
 
 /**

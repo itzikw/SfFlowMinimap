@@ -43,6 +43,8 @@ export function teardown() {
   hideTooltip();
   state.minimapZoom = 1.0;
   state.minimapPanOffset = { x: 0, y: 0 };
+  state.hoveredNodeEl = null;
+  state.searchQuery = '';
   if (state.minimap) {
     state.minimap.container.remove();
     state.minimap = null;

@@ -18,6 +18,8 @@
  *   tooltip           — the tooltip div element | null
  *   canvasScrollEl    — the scrollable canvas container | null
  *   isMinimapDragging — true while the user is panning via the minimap
+ *   hoveredNodeEl     — DOM element currently under the minimap cursor, or null
+ *   searchQuery       — active search string (empty = no filter)
  *   settings          — { position, startCollapsed, contextFillPct } loaded from chrome.storage.local
  */
 export const state = {
@@ -34,5 +36,7 @@ export const state = {
   tooltip: null,
   canvasScrollEl: null,
   isMinimapDragging: false,
+  hoveredNodeEl: null,   // DOM element currently under the minimap cursor (connector highlight)
+  searchQuery: '',       // active search string — empty means no filter
   settings: { position: 'bottom-right', startCollapsed: false, contextFillPct: 60 },
 };

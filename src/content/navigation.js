@@ -6,6 +6,7 @@
 import { CFG } from './config.js';
 import { state } from './state.js';
 import { collectNodes } from './collector.js';
+import { classifyElement } from './classifier.js';
 import { scheduleRender } from './renderer.js';
 
 /**
@@ -154,4 +155,28 @@ export function watchScrollContainer() {
   const windowFn = () => scheduleRender();
   window.addEventListener('scroll', windowFn, { passive: true });
   state.scrollListeners.push([window, windowFn]);
+}
+
+/**
+ * Scrolls the canvas to centre the Start node in the viewport.
+ * No-ops silently if no Start node is found.
+ */
+export function navigateToStart() {
+  const nodes = collectNodes();
+  const startNode = nodes.find((el) => classifyElement(el) === 'start');
+  if (!startNode) {
+    return;
+  }
+
+  if (state.canvasScrollEl) {
+    const nr = startNode.getBoundingClientRect();
+    const cr = state.canvasScrollEl.getBoundingClientRect();
+    state.canvasScrollEl.scrollBy({
+      left: nr.left + nr.width / 2 - (cr.left + cr.width / 2),
+      top: nr.top + nr.height / 2 - (cr.top + cr.height / 2),
+      behavior: 'smooth',
+    });
+  } else {
+    startNode.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+  }
 }

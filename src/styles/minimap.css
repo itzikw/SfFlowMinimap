@@ -38,7 +38,7 @@
 #sf-minimap-header {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   padding: 6px 8px;
   background: #0f172a;
   cursor: grab;
@@ -68,16 +68,17 @@
   border-radius: 10px;
 }
 
-/* Shared button base — resets Salesforce overrides */
+/* ── Shared button base — resets all Salesforce overrides ─────────────────── */
+
 #sf-minimap-header button {
   all: unset;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 22px;
+  height: 26px;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 13px;
   font-family: inherit;
   color: #cbd5e1;
   transition:
@@ -87,36 +88,51 @@
 
 #sf-minimap-header button:hover {
   background: #334155;
-  color: #e2e8f0;
+  color: #f1f5f9;
 }
 
-/* Fit toggle button */
-#sf-minimap-fit {
+/* ── Text toggle buttons (Fit, Find) ──────────────────────────────────────── */
+
+#sf-minimap-fit,
+#sf-minimap-find {
   padding: 0 8px;
   border: 1px solid #334155 !important;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
-#sf-minimap-fit.sf-btn-active {
+#sf-minimap-fit.sf-btn-active,
+#sf-minimap-find.sf-btn-active {
   background: #1d4ed8 !important;
   border-color: #1d4ed8 !important;
   color: #fff !important;
 }
 
-/* Info button */
+/* ── Icon buttons ─────────────────────────────────────────────────────────── */
+
+#sf-minimap-start {
+  width: 26px;
+  font-size: 17px;
+}
+
+#sf-minimap-export {
+  width: 26px;
+  font-size: 16px;
+}
+
 #sf-minimap-info {
-  font-size: 16px;
-  width: 22px;
+  width: 26px;
+  font-size: 17px;
 }
 
-/* Settings button */
 #sf-minimap-settings {
-  font-size: 16px;
-  width: 22px;
+  width: 26px;
+  font-size: 17px;
 }
 
-/* Collapse button */
 #sf-minimap-collapse {
-  width: 22px;
+  width: 26px;
   font-size: 18px;
   line-height: 1;
 }
@@ -128,7 +144,68 @@
   position: relative; /* needed for resize handle and info panel positioning */
 }
 
-/* Info panel — overlays canvas when visible */
+/* ── Search row ──────────────────────────────────────────────────────────── */
+
+#sf-minimap-search-row {
+  display: none;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+#sf-minimap-search-row.visible {
+  display: flex;
+}
+
+#sf-minimap-search {
+  flex: 1;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-family: inherit;
+  color: #e2e8f0;
+  outline: none;
+  box-shadow: none;
+  -webkit-appearance: none;
+  appearance: none;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+#sf-minimap-search::placeholder {
+  color: #475569;
+}
+
+#sf-minimap-search:focus {
+  border-color: #1d4ed8;
+}
+
+#sf-minimap-search-clear {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  color: #64748b;
+  transition:
+    background 0.12s,
+    color 0.12s;
+}
+
+#sf-minimap-search-clear:hover {
+  background: #334155;
+  color: #f1f5f9;
+}
+
+/* ── Info panel — overlays canvas when visible ────────────────────────────── */
+
 #sf-minimap-info-panel {
   display: none;
   position: absolute;

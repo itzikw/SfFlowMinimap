@@ -93,7 +93,10 @@ export function collectConnectors(nb) {
       if (Math.sqrt(dx * dx + dy * dy) < 10) {
         continue;
       }
-      lines.push({ x1, y1, x2, y2 });
+      // Fault paths in Salesforce Flow Builder carry a 'fault' class somewhere
+      // on the SVG element or one of its SVG ancestors.
+      const isFault = !!el.closest('[class*="fault"]');
+      lines.push({ x1, y1, x2, y2, isFault });
     } catch {
       // Malformed SVG element — skip silently
     }
