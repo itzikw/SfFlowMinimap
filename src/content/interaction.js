@@ -6,13 +6,14 @@
  * Dblclick:  resets zoom and pan offset to defaults.
  * Mousemove: shows a tooltip for the hovered flow element; highlights its
  *            connectors by updating state.hoveredNodeEl.
+ *            Uses rects cached in state.renderParams — no DOM queries on
+ *            every mouse movement.
  * Mouseleave: hides the tooltip and clears the hover highlight.
  * Wheel:     zooms the minimap view in/out.
  */
 import { state } from './state.js';
 import { minimapToScreen, navigateToNode } from './navigation.js';
 import { showTooltip, hideTooltip } from './tooltip.js';
-import { collectNodes } from './collector.js';
 import { classifyElement, getFullLabel } from './classifier.js';
 import { renderMinimap, scheduleRender } from './renderer.js';
 
@@ -58,7 +59,7 @@ export function handleMinimapMouseDown(e) {
     state.minimapPanOffset.y += (me.clientY - prevY) / scale;
     prevX = me.clientX;
     prevY = me.clientY;
-    renderMinimap();
+    renderMinimap(false); // pan changes the viewport — full render
   }
 
   function onUp() {
@@ -82,7 +83,7 @@ export function handleMinimapMouseDown(e) {
 export function handleMinimapDblClick() {
   state.minimapZoom = 1.0;
   state.minimapPanOffset = { x: 0, y: 0 };
-  renderMinimap();
+  renderMinimap(false); // scale changes — full render
 }
 
 /**
@@ -94,16 +95,18 @@ export function handleMinimapWheel(e) {
   e.preventDefault();
   const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
   state.minimapZoom = Math.max(0.25, Math.min(8, state.minimapZoom * factor));
-  scheduleRender();
+  scheduleRender(); // scale changes — full render (debounced)
 }
 
 /**
  * Handles mousemove on the minimap canvas.
  *
- * Shows a tooltip for whichever flow element the cursor is over.
- * Updates state.hoveredNodeEl and triggers a re-render only when the
- * hovered element changes (to highlight/de-highlight its connectors).
- * No-ops while a pan drag is in progress.
+ * Hit-tests against rects cached in state.renderParams — avoids querySelectorAll
+ * and getBoundingClientRect on every mouse movement (which was the main cause of
+ * the performance regression). Falls back gracefully if no cache exists yet.
+ *
+ * Triggers a paint-only re-render (renderMinimap(true)) only when the hovered
+ * element changes, to update the connector highlight.
  *
  * @param {MouseEvent} e
  */
@@ -118,17 +121,23 @@ export function handleMinimapHover(e) {
     hideTooltip();
     if (state.hoveredNodeEl !== null) {
       state.hoveredNodeEl = null;
-      renderMinimap();
+      renderMinimap(true);
     }
     return;
   }
 
+  // Use rects from the last full render — no DOM queries needed.
+  // Rects are refreshed by every scroll/mutation-triggered full render, so
+  // they are at most one debounce interval (150 ms) stale after scrolling.
+  const rects = state.renderParams?.rects;
   let foundNode = null;
-  for (const node of collectNodes()) {
-    const r = node.getBoundingClientRect();
-    if (sc.x >= r.left && sc.x <= r.right && sc.y >= r.top && sc.y <= r.bottom) {
-      foundNode = node;
-      break;
+
+  if (rects) {
+    for (const r of rects) {
+      if (sc.x >= r.left && sc.x <= r.right && sc.y >= r.top && sc.y <= r.bottom) {
+        foundNode = r.el;
+        break;
+      }
     }
   }
 
@@ -143,18 +152,18 @@ export function handleMinimapHover(e) {
   // Only re-render when the hovered element changes (avoids re-draw on every pixel move).
   if (foundNode !== state.hoveredNodeEl) {
     state.hoveredNodeEl = foundNode;
-    renderMinimap();
+    renderMinimap(true); // paint-only — connectors/nodes haven't moved
   }
 }
 
 /**
  * Handles the mouse leaving the minimap canvas.
- * Hides the tooltip and clears the hover highlight.
+ * Hides the tooltip and clears the connector-highlight state.
  */
 export function handleMinimapLeave() {
   hideTooltip();
   if (state.hoveredNodeEl !== null) {
     state.hoveredNodeEl = null;
-    renderMinimap();
+    renderMinimap(true); // paint-only
   }
 }

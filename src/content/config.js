@@ -4,7 +4,7 @@ export const CFG = {
   PADDING: 10,
   MIN_W: 140,
   MIN_H: 90,
-  DEBOUNCE_MS: 80,
+  DEBOUNCE_MS: 150, // coalesces rapid DOM/scroll events; 150ms is imperceptible yet halves render frequency
   INIT_DELAY_MS: 1200,
   CLICK_SNAP_PX: 30,
   NODE_SELECTORS: [

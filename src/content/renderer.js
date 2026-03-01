@@ -1,6 +1,13 @@
 /**
  * Canvas rendering: draws nodes, connectors, and the viewport indicator
  * onto the minimap <canvas> element.
+ *
+ * renderMinimap(hoverOnly = false)
+ *   false (default) — full render: re-collects nodes + connectors from the DOM,
+ *                     updates renderParams cache, repaints everything.
+ *   true            — paint-only render: reuses the last cached layout data
+ *                     (rects, connectors, scale, origin). Zero DOM queries.
+ *                     Used for hover-highlight and search-dimming updates.
  */
 import { CFG } from './config.js';
 import { state } from './state.js';
@@ -74,100 +81,23 @@ function connectorTouchesNode(c, nodeRect) {
 }
 
 /**
- * Full minimap repaint. Three drawing passes:
- *  1. Non-highlighted connectors (grey; fault paths in orange + dashed)
- *  2. Nodes (dimmed when a search query is active and node doesn't match)
- *  3. Connectors connected to the hovered node, drawn on top in blue
- * Followed by the viewport rectangle indicator.
+ * Performs the actual canvas draw using pre-computed layout data.
+ * Called by both the full render and the paint-only (hover/search) path.
+ *
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {{ scale, ox, oy, W, H, PAD, rects, connectors }} p  Cached render params
  */
-export function renderMinimap() {
-  if (!state.minimap) {
-    return;
-  }
-
-  const { canvas, ctx } = state.minimap;
-  const W = canvas.width;
-  const H = canvas.height;
-  const PAD = CFG.PADDING;
+function _repaint(ctx, p) {
+  const { scale, ox, oy, W, H, PAD, rects, connectors } = p;
 
   ctx.clearRect(0, 0, W, H);
   ctx.fillStyle = '#0f172a';
   ctx.fillRect(0, 0, W, H);
 
-  const nodes = collectNodes();
-  if (!nodes.length) {
-    ctx.fillStyle = '#475569';
-    ctx.font = '10px system-ui,sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('Waiting for flow elements\u2026', W / 2, H / 2);
-    updateBadge(0);
-    state.renderParams = null;
-    return;
-  }
-
-  const rects = nodes.map((el) => {
-    const r = el.getBoundingClientRect();
-    return { left: r.left, top: r.top, right: r.right, bottom: r.bottom, el };
-  });
-
-  const nb = {
-    minX: Math.min(...rects.map((r) => r.left)),
-    minY: Math.min(...rects.map((r) => r.top)),
-    maxX: Math.max(...rects.map((r) => r.right)),
-    maxY: Math.max(...rects.map((r) => r.bottom)),
-  };
-
-  const scaleFitAll = Math.min(
-    (W - PAD * 2) / (nb.maxX - nb.minX || 1),
-    (H - PAD * 2) / (nb.maxY - nb.minY || 1),
-  );
-
-  let scale, ox, oy;
-
-  if (state.fitAllMode) {
-    scale = scaleFitAll * state.minimapZoom;
-    const cx = (nb.minX + nb.maxX) / 2;
-    const cy = (nb.minY + nb.maxY) / 2;
-    ox = cx - (W - PAD * 2) / (2 * scale);
-    oy = cy - (H - PAD * 2) / (2 * scale);
-  } else {
-    // Use only the currently visible nodes as the context reference to
-    // eliminate dead space caused by toolbars or sidebars.
-    const vis = rects.filter(
-      (r) =>
-        r.right > 0 && r.left < window.innerWidth && r.bottom > 0 && r.top < window.innerHeight,
-    );
-    const src = vis.length ? vis : rects;
-    const srcMinX = Math.min(...src.map((r) => r.left));
-    const srcMaxX = Math.max(...src.map((r) => r.right));
-    const srcMinY = Math.min(...src.map((r) => r.top));
-    const srcMaxY = Math.max(...src.map((r) => r.bottom));
-    const srcW = Math.max(srcMaxX - srcMinX, 100);
-    const srcH = Math.max(srcMaxY - srcMinY, 100);
-    const fillPct = Math.max(1, state.settings?.contextFillPct ?? 60);
-    const effectiveZoom = 100 / fillPct / state.minimapZoom;
-    const scaleCtx = Math.min(
-      (W - PAD * 2) / (srcW * effectiveZoom),
-      (H - PAD * 2) / (srcH * effectiveZoom),
-    );
-    scale = Math.max(scaleFitAll, scaleCtx);
-    const cx = (srcMinX + srcMaxX) / 2;
-    const cy = (srcMinY + srcMaxY) / 2;
-    ox = cx - (W - PAD * 2) / (2 * scale);
-    oy = cy - (H - PAD * 2) / (2 * scale);
-  }
-
-  // Apply independent minimap pan offset (world-coordinate units)
-  ox -= state.minimapPanOffset.x;
-  oy -= state.minimapPanOffset.y;
-
   const toMX = (x) => (x - ox) * scale + PAD;
   const toMY = (y) => (y - oy) * scale + PAD;
-  state.renderParams = { scale, ox, oy };
 
-  // Pre-collect connectors; reused by all three passes.
-  const connectors = collectConnectors(nb);
+  // getBoundingClientRect on the single hovered element — one DOM read, not N.
   const hoveredRect = state.hoveredNodeEl ? state.hoveredNodeEl.getBoundingClientRect() : null;
 
   // ── Pass 1: Non-highlighted connectors ──────────────────────────────────
@@ -251,14 +181,118 @@ export function renderMinimap() {
   ctx.strokeRect(vpX, vpY, vpW, vpH);
   ctx.setLineDash([]);
 
+  // Badge — always kept in sync with current search state.
   updateBadge(rects.length, hasSearch ? matchCount : undefined);
 }
 
 /**
+ * Minimap repaint entry point.
+ *
+ * @param {boolean} [hoverOnly=false]
+ *   Pass `true` for hover-highlight or search-filter repaints.
+ *   The cached layout (rects, connectors, scale, origin) is reused — no DOM
+ *   queries are performed. Falls back to a full render if no cache exists yet.
+ */
+export function renderMinimap(hoverOnly = false) {
+  if (!state.minimap) {
+    return;
+  }
+
+  const { canvas, ctx } = state.minimap;
+
+  // ── Paint-only path (hover / search) ────────────────────────────────────
+  // Reuse previously computed layout — zero DOM queries.
+  if (hoverOnly && state.renderParams?.rects) {
+    _repaint(ctx, state.renderParams);
+    return;
+  }
+
+  // ── Full render path ─────────────────────────────────────────────────────
+  const W = canvas.width;
+  const H = canvas.height;
+  const PAD = CFG.PADDING;
+
+  const nodes = collectNodes();
+  if (!nodes.length) {
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#475569';
+    ctx.font = '10px system-ui,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Waiting for flow elements\u2026', W / 2, H / 2);
+    updateBadge(0);
+    state.renderParams = null;
+    return;
+  }
+
+  const rects = nodes.map((el) => {
+    const r = el.getBoundingClientRect();
+    return { left: r.left, top: r.top, right: r.right, bottom: r.bottom, el };
+  });
+
+  const nb = {
+    minX: Math.min(...rects.map((r) => r.left)),
+    minY: Math.min(...rects.map((r) => r.top)),
+    maxX: Math.max(...rects.map((r) => r.right)),
+    maxY: Math.max(...rects.map((r) => r.bottom)),
+  };
+
+  const scaleFitAll = Math.min(
+    (W - PAD * 2) / (nb.maxX - nb.minX || 1),
+    (H - PAD * 2) / (nb.maxY - nb.minY || 1),
+  );
+
+  let scale, ox, oy;
+
+  if (state.fitAllMode) {
+    scale = scaleFitAll * state.minimapZoom;
+    const cx = (nb.minX + nb.maxX) / 2;
+    const cy = (nb.minY + nb.maxY) / 2;
+    ox = cx - (W - PAD * 2) / (2 * scale);
+    oy = cy - (H - PAD * 2) / (2 * scale);
+  } else {
+    const vis = rects.filter(
+      (r) =>
+        r.right > 0 && r.left < window.innerWidth && r.bottom > 0 && r.top < window.innerHeight,
+    );
+    const src = vis.length ? vis : rects;
+    const srcMinX = Math.min(...src.map((r) => r.left));
+    const srcMaxX = Math.max(...src.map((r) => r.right));
+    const srcMinY = Math.min(...src.map((r) => r.top));
+    const srcMaxY = Math.max(...src.map((r) => r.bottom));
+    const srcW = Math.max(srcMaxX - srcMinX, 100);
+    const srcH = Math.max(srcMaxY - srcMinY, 100);
+    const fillPct = Math.max(1, state.settings?.contextFillPct ?? 60);
+    const effectiveZoom = 100 / fillPct / state.minimapZoom;
+    const scaleCtx = Math.min(
+      (W - PAD * 2) / (srcW * effectiveZoom),
+      (H - PAD * 2) / (srcH * effectiveZoom),
+    );
+    scale = Math.max(scaleFitAll, scaleCtx);
+    const cx = (srcMinX + srcMaxX) / 2;
+    const cy = (srcMinY + srcMaxY) / 2;
+    ox = cx - (W - PAD * 2) / (2 * scale);
+    oy = cy - (H - PAD * 2) / (2 * scale);
+  }
+
+  ox -= state.minimapPanOffset.x;
+  oy -= state.minimapPanOffset.y;
+
+  const connectors = collectConnectors(nb);
+
+  // Cache everything needed for subsequent paint-only renders.
+  state.renderParams = { scale, ox, oy, W, H, PAD, rects, connectors };
+
+  _repaint(ctx, state.renderParams);
+}
+
+/**
  * Debounced wrapper around renderMinimap — coalesces rapid DOM/scroll
- * events into a single repaint.
+ * events into a single full repaint.
  */
 export function scheduleRender() {
   clearTimeout(state.updateTimer);
-  state.updateTimer = setTimeout(renderMinimap, CFG.DEBOUNCE_MS);
+  state.updateTimer = setTimeout(() => renderMinimap(false), CFG.DEBOUNCE_MS);
 }

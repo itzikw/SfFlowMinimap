@@ -61,7 +61,16 @@ export function startDomObserver() {
     state.domObserver.disconnect();
   }
 
-  state.domObserver = new MutationObserver(() => {
+  state.domObserver = new MutationObserver((mutations) => {
+    // Ignore mutations that originate inside the minimap widget itself to
+    // avoid unnecessary re-renders caused by our own DOM changes (e.g. the
+    // search row, tooltip visibility, or canvas repaints).
+    if (
+      state.minimap &&
+      mutations.every((m) => state.minimap.container.contains(m.target))
+    ) {
+      return;
+    }
     if (!state.minimap && isFlowBuilderPage()) {
       buildMinimap();
     } else if (state.minimap) {

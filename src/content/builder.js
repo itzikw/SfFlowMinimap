@@ -122,13 +122,18 @@ export function buildMinimap() {
     }
   });
 
-  // Settings — opens options page in a new tab
+  // Settings — opens options page in a new tab.
+  // chrome.runtime can become undefined if the extension context is invalidated
+  // (e.g. extension reloaded while the tab is open); guard with optional chaining.
   const settingsBtn = document.createElement('button');
   settingsBtn.id = 'sf-minimap-settings';
   settingsBtn.title = 'Open settings';
   settingsBtn.textContent = '\u2699'; // ⚙
   settingsBtn.addEventListener('click', () => {
-    window.open(chrome.runtime.getURL('options.html'));
+    const url = chrome?.runtime?.getURL?.('options.html');
+    if (url) {
+      window.open(url);
+    }
   });
 
   // Collapse / expand
@@ -172,7 +177,7 @@ export function buildMinimap() {
   searchInput.spellcheck = false;
   searchInput.addEventListener('input', () => {
     state.searchQuery = searchInput.value.trim().toLowerCase();
-    renderMinimap();
+    renderMinimap(true); // paint-only: nodes/connectors haven't moved
   });
   searchInput.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
@@ -180,7 +185,7 @@ export function buildMinimap() {
       findBtn.classList.remove('sf-btn-active');
       state.searchQuery = '';
       searchInput.value = '';
-      renderMinimap();
+      renderMinimap(true);
       e.stopPropagation();
     }
   });
@@ -194,7 +199,7 @@ export function buildMinimap() {
     findBtn.classList.remove('sf-btn-active');
     state.searchQuery = '';
     searchInput.value = '';
-    renderMinimap();
+    renderMinimap(true);
   });
 
   searchRow.appendChild(searchInput);
