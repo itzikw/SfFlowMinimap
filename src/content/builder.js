@@ -130,10 +130,10 @@ export function buildMinimap() {
   settingsBtn.title = 'Open settings';
   settingsBtn.textContent = '\u2699'; // ⚙
   settingsBtn.addEventListener('click', () => {
-    const url = chrome?.runtime?.getURL?.('options.html');
-    if (url) {
-      window.open(url);
-    }
+    // openOptionsPage() is available in content scripts and is the correct API.
+    // The optional chain guards against an invalidated extension context
+    // (chrome.runtime becomes undefined when the extension is reloaded mid-session).
+    chrome?.runtime?.openOptionsPage?.();
   });
 
   // Collapse / expand
