@@ -28,7 +28,7 @@ export function buildMinimap() {
   }
 
   const initW = CFG.INITIAL_W;
-  const initH = Math.max(CFG.MIN_H, Math.round((initW * window.innerHeight) / window.innerWidth));
+  const initH = Math.max(CFG.MIN_H, Math.round(initW * 9 / 16));
 
   // ── Container ──────────────────────────────────────────────────────────
   const container = document.createElement('div');
@@ -57,6 +57,17 @@ export function buildMinimap() {
     renderMinimap();
   });
 
+  const infoBtn = document.createElement('button');
+  infoBtn.id = 'sf-minimap-info';
+  infoBtn.title = 'About & help';
+  infoBtn.textContent = '\u2139';
+  infoBtn.addEventListener('click', () => {
+    const panel = document.getElementById('sf-minimap-info-panel');
+    if (panel) {
+      panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+    }
+  });
+
   const settingsBtn = document.createElement('button');
   settingsBtn.id = 'sf-minimap-settings';
   settingsBtn.title = 'Open settings';
@@ -80,6 +91,7 @@ export function buildMinimap() {
   header.appendChild(title);
   header.appendChild(badge);
   header.appendChild(fitBtn);
+  header.appendChild(infoBtn);
   header.appendChild(settingsBtn);
   header.appendChild(collapseBtn);
 
@@ -96,6 +108,21 @@ export function buildMinimap() {
   canvas.addEventListener('mousemove', handleMinimapHover);
   canvas.addEventListener('mouseleave', hideTooltip);
   canvas.addEventListener('wheel', handleMinimapWheel, { passive: false });
+
+  const infoPanel = document.createElement('div');
+  infoPanel.id = 'sf-minimap-info-panel';
+  infoPanel.innerHTML =
+    '<strong>Salesforce Flow Minimap</strong>' +
+    '<ul>' +
+    '<li><strong>Click</strong> any node to navigate directly to it</li>' +
+    '<li><strong>Scroll</strong> over the minimap to zoom in / out</li>' +
+    '<li><strong>Drag</strong> inside the minimap to pan the view</li>' +
+    '<li><strong>Double-click</strong> to reset zoom &amp; pan</li>' +
+    '<li><strong>Fit</strong> button toggles between all-nodes and context view</li>' +
+    '<li><strong>Drag the header</strong> to reposition the window</li>' +
+    '<li><strong>Resize</strong> from the bottom-right corner</li>' +
+    '<li>Use <strong>⚙ Settings</strong> to change position, start mode &amp; zoom</li>' +
+    '</ul>';
 
   // ── Legend ─────────────────────────────────────────────────────────────
   const legend = document.createElement('div');
@@ -122,6 +149,7 @@ export function buildMinimap() {
   resizeHandle.id = 'sf-minimap-resize';
 
   body.appendChild(canvas);
+  body.appendChild(infoPanel);
   body.appendChild(legend);
   body.appendChild(resizeHandle);
   container.appendChild(header);
@@ -130,11 +158,12 @@ export function buildMinimap() {
 
   // The header (title + badge + buttons) may be wider than initW + padding.
   // Expand the canvas to fill whatever width the container settled at so
-  // there is no dead space on the right side.
+  // there is no dead space on the right side. Enforce 16:9 on final size.
   const containerInnerW = container.offsetWidth - CFG.PADDING * 2;
   if (containerInnerW > canvas.width) {
     canvas.width = containerInnerW;
   }
+  canvas.height = Math.round(canvas.width * 9 / 16);
 
   applyPosition(container, state.settings.position);
 
